@@ -1,5 +1,7 @@
 package com.example.ordermonolith;
 
+import com.example.ordermonolith.dto.CheckoutDto;
+import com.example.ordermonolith.dto.CheckoutItemDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -63,54 +67,18 @@ public class OrderController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> checkout(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> checkout(@Valid @RequestBody CheckoutDto body) {
         log.info("Incoming checkout request: {}", body);
 
         try {
             // ---------------------------------------------------------------
-            // STEP 1: "validation" (a.k.a. the arrow anti-pattern)
+            // STEP 1: request-shape validation now happens declaratively via
+            // @Valid on the CheckoutDto - a bad payload never reaches this method
+            // and comes back as a 400 MethodArgumentNotValidException.
             // ---------------------------------------------------------------
-            if (body != null) {
-                if (body.get("customerEmail") != null) {
-                    String email = String.valueOf(body.get("customerEmail"));
-                    if (email.contains("@") && email.contains(".")) {
-                        if (body.get("items") != null) {
-                            if (body.get("items") instanceof List) {
-                                List<?> rawItems = (List<?>) body.get("items");
-                                if (!rawItems.isEmpty()) {
-                                    if (body.get("paymentMethod") != null) {
-                                        String pm = String.valueOf(body.get("paymentMethod"));
-                                        if (pm.equals("STRIPE") || pm.equals("PAYPAL") || pm.equals("CREDIT_CARD")) {
-                                            // fall through to the actual work
-                                        } else {
-                                            return ResponseEntity.status(400).body("Error: unsupported paymentMethod " + pm);
-                                        }
-                                    } else {
-                                        return ResponseEntity.status(400).body("Error: paymentMethod is required");
-                                    }
-                                } else {
-                                    return ResponseEntity.status(400).body("Error: items must not be empty");
-                                }
-                            } else {
-                                return ResponseEntity.status(400).body("Error: items must be an array");
-                            }
-                        } else {
-                            return ResponseEntity.status(400).body("Error: items is required");
-                        }
-                    } else {
-                        return ResponseEntity.status(400).body("Error: customerEmail is not a valid email");
-                    }
-                } else {
-                    return ResponseEntity.status(400).body("Error: customerEmail is required");
-                }
-            } else {
-                return ResponseEntity.status(400).body("Error: body is required");
-            }
-
-            String customerEmail = String.valueOf(body.get("customerEmail"));
-            String paymentMethod = String.valueOf(body.get("paymentMethod"));
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
+            String customerEmail = body.getCustomerEmail();
+            String paymentMethod = body.getPaymentMethod();
+            List<CheckoutItemDto> items = body.getItems();
 
             // ---------------------------------------------------------------
             // STEP 2: load products one-by-one, check stock, do pricing math
@@ -118,17 +86,9 @@ public class OrderController {
             BigDecimal subtotal = BigDecimal.ZERO;
             List<Map<String, Object>> pricedLines = new ArrayList<>();
 
-            for (Map<String, Object> item : items) {
-                if (item.get("productId") == null || item.get("quantity") == null) {
-                    return ResponseEntity.status(400).body("Error: each item needs productId and quantity");
-                }
-
-                Long productId = Long.valueOf(String.valueOf(item.get("productId")));
-                int quantity = Integer.parseInt(String.valueOf(item.get("quantity")));
-
-                if (quantity <= 0) {
-                    return ResponseEntity.status(400).body("Error: quantity must be > 0 for product " + productId);
-                }
+            for (CheckoutItemDto item : items) {
+                Long productId = item.getProductId();
+                int quantity = item.getQuantity();
 
                 List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                         "SELECT id, name, price, stock FROM products WHERE id = ?", productId);
@@ -167,7 +127,7 @@ public class OrderController {
                     ? BigDecimal.ZERO
                     : new BigDecimal("9.99");
             BigDecimal discount = BigDecimal.ZERO;
-            if (body.get("coupon") != null && String.valueOf(body.get("coupon")).equals("SAVE5")) {
+            if ("SAVE5".equals(body.getCoupon())) {
                 discount = subtotal.multiply(new BigDecimal("0.05")).setScale(2, RoundingMode.HALF_UP);
             }
             BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount).setScale(2, RoundingMode.HALF_UP);
@@ -229,7 +189,7 @@ public class OrderController {
                 }
                 case "CREDIT_CARD": {
                     // "Processed" entirely in-process. No validation of the card at all.
-                    String cardNumber = body.get("cardNumber") == null ? "" : String.valueOf(body.get("cardNumber"));
+                    String cardNumber = body.getCardNumber() == null ? "" : body.getCardNumber();
                     if (cardNumber.length() < 12) {
                         return ResponseEntity.status(422).body("Error: cardNumber looks invalid");
                     }
