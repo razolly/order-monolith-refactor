@@ -1,5 +1,6 @@
 package com.example.ordermonolith;
 
+import com.example.ordermonolith.constants.UriConstant;
 import com.example.ordermonolith.dto.CheckoutDto;
 import com.example.ordermonolith.dto.CheckoutItemDto;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,6 +30,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.example.ordermonolith.constants.UriConstant.PAYMENT_API;
+
 /**
  * ============================================================================
  *  THE "MESSY MONOLITH"  -  DO NOT USE THIS AS A REFERENCE FOR GOOD CODE
@@ -50,7 +53,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping(UriConstant.ORDERS)
 public class OrderController {
 
     // Injected in the constructor... but also re-created inline further down. Nice.
@@ -58,15 +61,13 @@ public class OrderController {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final String PAYMENT_API = "https://api.paymentservice.com/v1/charge";
-
     public OrderController(JdbcTemplate jdbcTemplate, RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.jdbcTemplate = jdbcTemplate;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }
 
-    @PostMapping("/checkout")
+    @PostMapping(UriConstant.CHECKOUT)
     public ResponseEntity<?> checkout(@Valid @RequestBody CheckoutDto body) {
         log.info("Incoming checkout request: {}", body);
 
