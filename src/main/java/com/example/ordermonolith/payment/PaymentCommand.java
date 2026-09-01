@@ -1,11 +1,17 @@
 package com.example.ordermonolith.payment;
 
+import lombok.Builder;
+
 import java.math.BigDecimal;
 
 /**
  * Immutable instruction to charge a customer. This is the payment package's own
  * input type &ndash; the service builds it from validated data, so strategies
  * never see a web DTO or a raw request map.
+ *
+ * <p>Built with the generated builder rather than the positional constructor:
+ * {@code customerEmail} and {@code cardNumber} are both {@code String}, so a
+ * named builder call removes the chance of transposing them.
  *
  * @param method        which provider should handle the charge
  * @param amount        the gross amount to capture, in major currency units
@@ -14,6 +20,7 @@ import java.math.BigDecimal;
  * @param cardNumber    PAN, only populated for {@link PaymentMethod#CREDIT_CARD};
  *                      never logged
  */
+@Builder
 public record PaymentCommand(
         PaymentMethod method,
         BigDecimal amount,
@@ -21,8 +28,4 @@ public record PaymentCommand(
         String customerEmail,
         String cardNumber
 ) {
-
-    public static PaymentCommand of(PaymentMethod method, BigDecimal amount, String customerEmail, String cardNumber) {
-        return new PaymentCommand(method, amount, "usd", customerEmail, cardNumber);
-    }
 }

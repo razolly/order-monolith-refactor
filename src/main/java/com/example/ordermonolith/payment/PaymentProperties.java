@@ -1,5 +1,6 @@
 package com.example.ordermonolith.payment;
 
+import lombok.Builder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -19,6 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param stripeApiKey  Stripe secret key (env-supplied)
  * @param paypalApiKey  PayPal secret key (env-supplied)
  */
+@Builder
 @ConfigurationProperties(prefix = "payment")
 public record PaymentProperties(
         String baseUrl,

@@ -9,16 +9,24 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 /**
- * Row of {@code order_items}. Created only via {@link Order#addItem}, so it can
- * never exist without its parent order &ndash; the class is package-private for
- * construction and only exposes getters.
+ * Row of {@code order_items}. Created only via {@link Order#addItem} (which calls
+ * {@code OrderItem.builder()}), so it can never exist without its parent order.
  */
 @Entity
 @Table(name = "order_items")
+@Getter
+@Builder(access = AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)   // for JPA
+@AllArgsConstructor(access = AccessLevel.PRIVATE)    // for the builder
 public class OrderItem {
 
     @Id
@@ -40,36 +48,4 @@ public class OrderItem {
 
     @Column(name = "line_total", nullable = false, precision = 12, scale = 2)
     private BigDecimal lineTotal;
-
-    protected OrderItem() {
-        // required by JPA
-    }
-
-    OrderItem(Order order, long productId, BigDecimal unitPrice, int quantity, BigDecimal lineTotal) {
-        this.order = order;
-        this.productId = productId;
-        this.unitPrice = unitPrice;
-        this.quantity = quantity;
-        this.lineTotal = lineTotal;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public long getProductId() {
-        return productId;
-    }
-
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public BigDecimal getLineTotal() {
-        return lineTotal;
-    }
 }

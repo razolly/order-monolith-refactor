@@ -1,5 +1,7 @@
 package com.example.ordermonolith.payment;
 
+import lombok.Builder;
+
 /**
  * Outcome of a successful charge. A failed charge is signalled by a
  * {@link com.example.ordermonolith.error.PaymentGatewayException} or
@@ -10,5 +12,6 @@ package com.example.ordermonolith.payment;
  * @param reference provider-side transaction id, persisted on the order
  * @param provider  human-readable provider name, for the audit trail
  */
+@Builder
 public record PaymentResult(String reference, String provider) {
 }

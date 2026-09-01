@@ -1,5 +1,6 @@
 package com.example.ordermonolith.pricing;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -15,15 +16,12 @@ import java.util.List;
  * in a plain JUnit test is all it takes.
  */
 @Component
+@RequiredArgsConstructor
 public class PricingCalculator {
 
     private static final int MONEY_SCALE = 2;
 
     private final PricingProperties properties;
-
-    public PricingCalculator(PricingProperties properties) {
-        this.properties = properties;
-    }
 
     public PriceBreakdown price(List<CartLine> lines, String couponCode) {
         BigDecimal subtotal = subtotal(lines);
@@ -31,7 +29,13 @@ public class PricingCalculator {
         BigDecimal shipping = shipping(subtotal);
         BigDecimal discount = discount(subtotal, couponCode);
         BigDecimal total = money(subtotal.add(tax).add(shipping).subtract(discount));
-        return new PriceBreakdown(money(subtotal), tax, shipping, discount, total);
+        return PriceBreakdown.builder()
+                .subtotal(money(subtotal))
+                .tax(tax)
+                .shipping(shipping)
+                .discount(discount)
+                .total(total)
+                .build();
     }
 
     private BigDecimal subtotal(List<CartLine> lines) {

@@ -14,16 +14,22 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PricingCalculatorTest {
 
-    private final PricingProperties properties = new PricingProperties(
-            new BigDecimal("0.08"),
-            new BigDecimal("100.00"),
-            new BigDecimal("9.99"),
-            Map.of("SAVE5", new BigDecimal("0.05")));
+    private final PricingProperties properties = PricingProperties.builder()
+            .taxRate(new BigDecimal("0.08"))
+            .freeShippingThreshold(new BigDecimal("100.00"))
+            .standardShippingFee(new BigDecimal("9.99"))
+            .coupons(Map.of("SAVE5", new BigDecimal("0.05")))
+            .build();
 
     private final PricingCalculator calculator = new PricingCalculator(properties);
 
     private static CartLine line(String unitPrice, int qty) {
-        return new CartLine(1L, "widget", new BigDecimal(unitPrice), qty);
+        return CartLine.builder()
+                .productId(1L)
+                .productName("widget")
+                .unitPrice(new BigDecimal(unitPrice))
+                .quantity(qty)
+                .build();
     }
 
     @Test

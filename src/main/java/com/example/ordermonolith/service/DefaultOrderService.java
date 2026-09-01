@@ -7,6 +7,7 @@ import com.example.ordermonolith.persistence.entity.Order;
 import com.example.ordermonolith.pricing.CartLine;
 import com.example.ordermonolith.pricing.PriceBreakdown;
 import com.example.ordermonolith.pricing.PricingCalculator;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import java.util.List;
  * This method has no branching on payment method, no SQL and no HTTP.
  */
 @Service
+@AllArgsConstructor
 class DefaultOrderService implements OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultOrderService.class);
@@ -36,25 +38,19 @@ class DefaultOrderService implements OrderService {
     private final PaymentStrategyRegistry paymentStrategies;
     private final OrderWriter orderWriter;
 
-    DefaultOrderService(ProductCatalog productCatalog,
-                        PricingCalculator pricingCalculator,
-                        PaymentStrategyRegistry paymentStrategies,
-                        OrderWriter orderWriter) {
-        this.productCatalog = productCatalog;
-        this.pricingCalculator = pricingCalculator;
-        this.paymentStrategies = paymentStrategies;
-        this.orderWriter = orderWriter;
-    }
-
     @Override
     public Order checkout(CheckoutCommand command) {
         List<CartLine> lines = productCatalog.toCartLines(command.items());
         PriceBreakdown price = pricingCalculator.price(lines, command.coupon());
 
         PaymentResult payment = paymentStrategies.resolve(command.paymentMethod())
-                .charge(new PaymentCommand(
-                        command.paymentMethod(), price.total(), "usd",
-                        command.customerEmail(), command.cardNumber()));
+                .charge(PaymentCommand.builder()
+                        .method(command.paymentMethod())
+                        .amount(price.total())
+                        .currency("usd")
+                        .customerEmail(command.customerEmail())
+                        .cardNumber(command.cardNumber())
+                        .build());
 
         Order order = orderWriter.persist(command, lines, price, payment);
         log.info("Checkout complete: order {} for {} total {}",

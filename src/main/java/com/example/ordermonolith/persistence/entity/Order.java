@@ -10,6 +10,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -23,9 +27,15 @@ import java.util.List;
  * <p>Persisting one {@code Order} cascades its items in a single unit of work,
  * which is how the write path becomes atomic &ndash; the monolith did three
  * unrelated {@code JdbcTemplate} calls and re-queried the generated id.
+ *
+ * <p>Instances are created with {@code Order.builder()...build()}. The builder
+ * only exposes the business fields; {@code id} is DB-assigned, and a new order
+ * is always {@code CONFIRMED} with {@code createdAt} set to now.
  */
 @Entity
 @Table(name = "orders")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class Order {
 
     @Id
@@ -66,13 +76,9 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
-    protected Order() {
-        // required by JPA
-    }
-
+    @Builder
     private Order(String customerEmail, BigDecimal subtotal, BigDecimal tax, BigDecimal shipping,
-                  BigDecimal discount, BigDecimal total, String paymentMethod, String paymentReference,
-                  OrderStatus status, Instant createdAt) {
+                  BigDecimal discount, BigDecimal total, String paymentMethod, String paymentReference) {
         this.customerEmail = customerEmail;
         this.subtotal = subtotal;
         this.tax = tax;
@@ -81,63 +87,18 @@ public class Order {
         this.total = total;
         this.paymentMethod = paymentMethod;
         this.paymentReference = paymentReference;
-        this.status = status;
-        this.createdAt = createdAt;
-    }
-
-    /** Creates a CONFIRMED order with {@code createdAt} set to now. */
-    public static Order confirmed(String customerEmail, BigDecimal subtotal, BigDecimal tax, BigDecimal shipping,
-                                  BigDecimal discount, BigDecimal total, String paymentMethod, String paymentReference) {
-        return new Order(customerEmail, subtotal, tax, shipping, discount, total,
-                paymentMethod, paymentReference, OrderStatus.CONFIRMED, Instant.now());
+        this.status = OrderStatus.CONFIRMED;
+        this.createdAt = Instant.now();
     }
 
     public void addItem(long productId, BigDecimal unitPrice, int quantity, BigDecimal lineTotal) {
-        items.add(new OrderItem(this, productId, unitPrice, quantity, lineTotal));
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getCustomerEmail() {
-        return customerEmail;
-    }
-
-    public BigDecimal getSubtotal() {
-        return subtotal;
-    }
-
-    public BigDecimal getTax() {
-        return tax;
-    }
-
-    public BigDecimal getShipping() {
-        return shipping;
-    }
-
-    public BigDecimal getDiscount() {
-        return discount;
-    }
-
-    public BigDecimal getTotal() {
-        return total;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public String getPaymentReference() {
-        return paymentReference;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
+        items.add(OrderItem.builder()
+                .order(this)
+                .productId(productId)
+                .unitPrice(unitPrice)
+                .quantity(quantity)
+                .lineTotal(lineTotal)
+                .build());
     }
 
     public List<OrderItem> getItems() {

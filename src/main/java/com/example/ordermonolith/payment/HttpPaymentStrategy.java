@@ -62,7 +62,7 @@ abstract class HttpPaymentStrategy implements PaymentStrategy {
         if (properties.fakeApprovals()) {
             String reference = provider().toLowerCase() + "_fake_" + UUID.randomUUID();
             log.info("[{}] fake-approvals enabled - not calling the gateway, reference={}", provider(), reference);
-            return new PaymentResult(reference, provider());
+            return PaymentResult.builder().reference(reference).provider(provider()).build();
         }
 
         try {
@@ -73,7 +73,10 @@ abstract class HttpPaymentStrategy implements PaymentStrategy {
             if (json == null || !json.hasNonNull("id")) {
                 throw new PaymentGatewayException(provider() + " returned no transaction id");
             }
-            return new PaymentResult(json.get("id").asText(), provider());
+            return PaymentResult.builder()
+                    .reference(json.get("id").asText())
+                    .provider(provider())
+                    .build();
         } catch (RestClientException e) {
             throw new PaymentGatewayException(provider(), e);
         }

@@ -5,6 +5,7 @@ import com.example.ordermonolith.error.ProductNotFoundException;
 import com.example.ordermonolith.persistence.entity.Product;
 import com.example.ordermonolith.persistence.repository.ProductRepository;
 import com.example.ordermonolith.pricing.CartLine;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +22,10 @@ import java.util.List;
  * the conditional {@code decrementStock} in the write transaction.
  */
 @Component
+@RequiredArgsConstructor
 class ProductCatalog {
 
     private final ProductRepository productRepository;
-
-    ProductCatalog(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
 
     @Transactional(readOnly = true)
     List<CartLine> toCartLines(List<CheckoutCommand.Item> items) {
@@ -42,6 +40,11 @@ class ProductCatalog {
             throw new InsufficientStockException(product.getId(), product.getStock(), item.quantity());
         }
 
-        return new CartLine(product.getId(), product.getName(), product.getPrice(), item.quantity());
+        return CartLine.builder()
+                .productId(product.getId())
+                .productName(product.getName())
+                .unitPrice(product.getPrice())
+                .quantity(item.quantity())
+                .build();
     }
 }

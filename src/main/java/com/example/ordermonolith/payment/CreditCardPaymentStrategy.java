@@ -32,6 +32,9 @@ class CreditCardPaymentStrategy implements PaymentStrategy {
             throw new InvalidCheckoutException("cardNumber looks invalid");
         }
         log.info("Authorising card payment of {} for {}", command.amount(), command.customerEmail());
-        return new PaymentResult("cc_" + UUID.randomUUID(), "credit_card");
+        return PaymentResult.builder()
+                .reference("cc_" + UUID.randomUUID())
+                .provider("credit_card")
+                .build();
     }
 }

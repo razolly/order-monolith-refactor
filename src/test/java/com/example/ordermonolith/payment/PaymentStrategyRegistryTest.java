@@ -21,7 +21,7 @@ class PaymentStrategyRegistryTest {
 
             @Override
             public PaymentResult charge(PaymentCommand command) {
-                return new PaymentResult("ref", method.name());
+                return PaymentResult.builder().reference("ref").provider(method.name()).build();
             }
         };
     }
@@ -55,8 +55,13 @@ class PaymentStrategyRegistryTest {
     void creditCardStrategyRejectsAShortPan() {
         CreditCardPaymentStrategy strategy = new CreditCardPaymentStrategy();
 
-        assertThatThrownBy(() -> strategy.charge(new PaymentCommand(
-                PaymentMethod.CREDIT_CARD, new BigDecimal("10.00"), "usd", "a@b.com", "123")))
+        assertThatThrownBy(() -> strategy.charge(PaymentCommand.builder()
+                .method(PaymentMethod.CREDIT_CARD)
+                .amount(new BigDecimal("10.00"))
+                .currency("usd")
+                .customerEmail("a@b.com")
+                .cardNumber("123")
+                .build()))
                 .isInstanceOf(InvalidCheckoutException.class);
     }
 }

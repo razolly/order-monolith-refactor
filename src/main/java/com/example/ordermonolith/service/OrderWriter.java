@@ -9,6 +9,7 @@ import com.example.ordermonolith.persistence.repository.OrderRepository;
 import com.example.ordermonolith.persistence.repository.ProductRepository;
 import com.example.ordermonolith.pricing.CartLine;
 import com.example.ordermonolith.pricing.PriceBreakdown;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,27 +33,25 @@ import java.util.List;
  * but the seam (one method, one place to react) now exists.
  */
 @Component
+@RequiredArgsConstructor
 class OrderWriter {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final AuditLogRepository auditLogRepository;
 
-    OrderWriter(OrderRepository orderRepository,
-                ProductRepository productRepository,
-                AuditLogRepository auditLogRepository) {
-        this.orderRepository = orderRepository;
-        this.productRepository = productRepository;
-        this.auditLogRepository = auditLogRepository;
-    }
-
     @Transactional
     Order persist(CheckoutCommand command, List<CartLine> lines, PriceBreakdown price, PaymentResult payment) {
-        Order order = Order.confirmed(
-                command.customerEmail(),
-                price.subtotal(), price.tax(), price.shipping(), price.discount(), price.total(),
-                command.paymentMethod().name(),
-                payment.reference());
+        Order order = Order.builder()
+                .customerEmail(command.customerEmail())
+                .subtotal(price.subtotal())
+                .tax(price.tax())
+                .shipping(price.shipping())
+                .discount(price.discount())
+                .total(price.total())
+                .paymentMethod(command.paymentMethod().name())
+                .paymentReference(payment.reference())
+                .build();
 
         for (CartLine line : lines) {
             order.addItem(line.productId(), line.unitPrice(), line.quantity(), line.lineTotal());
@@ -61,11 +60,12 @@ class OrderWriter {
 
         Order saved = orderRepository.save(order);
 
-        auditLogRepository.save(AuditLogEntry.now(
-                "Order " + saved.getId() + " confirmed for " + saved.getCustomerEmail()
+        auditLogRepository.save(AuditLogEntry.builder()
+                .message("Order " + saved.getId() + " confirmed for " + saved.getCustomerEmail()
                         + " total=" + saved.getTotal()
                         + " via " + saved.getPaymentMethod()
-                        + " ref=" + saved.getPaymentReference()));
+                        + " ref=" + saved.getPaymentReference())
+                .build());
 
         return saved;
     }

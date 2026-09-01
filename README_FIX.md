@@ -239,6 +239,33 @@ body **including `cardNumber`**, and logged "card ending 1111".
 **Fix.** One completion log line in the service; payment strategies log that a
 charge happened, never the PAN. The full-body log is gone.
 
+### 2.11 Object construction — Lombok builders, no positional constructors
+
+**Problem.** Several new value types and entities are built from many arguments,
+some of the same type (`PaymentCommand` has `customerEmail` and `cardNumber`
+adjacent, both `String`). Positional `new X(a, b, c, d, e)` calls are easy to get
+wrong and hard to read at the call site.
+
+**Fix.**
+
+- Value records (`CartLine`, `PriceBreakdown`, `PaymentCommand`, `PaymentResult`,
+  `CheckoutCommand` + `Item`, `CheckoutResponse` + `Line`) and the config
+  records (`PricingProperties`, `PaymentProperties`) carry `@Builder`.
+- Entities (`Order`, `OrderItem`, `AuditLogEntry`) are built with `@Builder` too:
+  - `Order` puts `@Builder` on a **private constructor** that takes only the
+    business fields — `id` is DB-assigned, `status` is always `CONFIRMED`,
+    `createdAt` is stamped in the constructor, `items` starts empty.
+  - `@NoArgsConstructor(access = PROTECTED)` is kept for Hibernate.
+  - The hand-written `Order.confirmed(...)` / `AuditLogEntry.now(...)` factories
+    are gone; call sites use `Order.builder()...build()` etc.
+- Every construction site (production and tests) now reads as named
+  `.field(value)` calls.
+- DI constructors that were pure field assignment (`OrderController`,
+  `PricingCalculator`, `ProductCatalog`, `OrderWriter`, `DefaultOrderService`)
+  use `@RequiredArgsConstructor` / `@AllArgsConstructor`. `PaymentStrategyRegistry`
+  keeps an explicit constructor because it does work (building the method → bean
+  map).
+
 ---
 
 ## 3. Tests added

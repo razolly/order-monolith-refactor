@@ -1,6 +1,7 @@
 package com.example.ordermonolith.web.dto;
 
 import com.example.ordermonolith.persistence.entity.Order;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
  * Built from an {@link Order} entity by {@link #from} so the mapping lives in
  * one place and the entity itself is never serialized.
  */
+@Builder
 public record CheckoutResponse(
         Long orderId,
         String status,
@@ -25,6 +27,7 @@ public record CheckoutResponse(
 ) {
 
     /** A priced line in the response. */
+    @Builder
     public record Line(
             long productId,
             BigDecimal unitPrice,
@@ -35,20 +38,25 @@ public record CheckoutResponse(
 
     public static CheckoutResponse from(Order order) {
         List<Line> lines = order.getItems().stream()
-                .map(item -> new Line(item.getProductId(), item.getUnitPrice(),
-                        item.getQuantity(), item.getLineTotal()))
+                .map(item -> Line.builder()
+                        .productId(item.getProductId())
+                        .unitPrice(item.getUnitPrice())
+                        .quantity(item.getQuantity())
+                        .lineTotal(item.getLineTotal())
+                        .build())
                 .toList();
-        return new CheckoutResponse(
-                order.getId(),
-                order.getStatus().name(),
-                order.getCustomerEmail(),
-                lines,
-                order.getSubtotal(),
-                order.getTax(),
-                order.getShipping(),
-                order.getDiscount(),
-                order.getTotal(),
-                order.getPaymentMethod(),
-                order.getPaymentReference());
+        return CheckoutResponse.builder()
+                .orderId(order.getId())
+                .status(order.getStatus().name())
+                .customerEmail(order.getCustomerEmail())
+                .lines(lines)
+                .subtotal(order.getSubtotal())
+                .tax(order.getTax())
+                .shipping(order.getShipping())
+                .discount(order.getDiscount())
+                .total(order.getTotal())
+                .paymentMethod(order.getPaymentMethod())
+                .paymentReference(order.getPaymentReference())
+                .build();
     }
 }

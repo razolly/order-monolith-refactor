@@ -1,5 +1,7 @@
 package com.example.ordermonolith.pricing;
 
+import lombok.Builder;
+
 import java.math.BigDecimal;
 
 /**
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
  * @param unitPrice   price per unit at purchase time
  * @param quantity    units ordered (already validated &gt; 0)
  */
+@Builder
 public record CartLine(
         long productId,
         String productName,

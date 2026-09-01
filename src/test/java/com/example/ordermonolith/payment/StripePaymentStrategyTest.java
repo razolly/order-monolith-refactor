@@ -26,12 +26,20 @@ class StripePaymentStrategyTest {
     private final RestTemplate restTemplate = mock(RestTemplate.class);
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private final PaymentCommand command = new PaymentCommand(
-            PaymentMethod.STRIPE, new BigDecimal("42.00"), "usd", "buyer@example.com", null);
+    private final PaymentCommand command = PaymentCommand.builder()
+            .method(PaymentMethod.STRIPE)
+            .amount(new BigDecimal("42.00"))
+            .currency("usd")
+            .customerEmail("buyer@example.com")
+            .build();
 
     private StripePaymentStrategy strategy(boolean fakeApprovals) {
-        return new StripePaymentStrategy(restTemplate,
-                new PaymentProperties("https://gw.test/charge", fakeApprovals, "sk_test", "pp_test"));
+        return new StripePaymentStrategy(restTemplate, PaymentProperties.builder()
+                .baseUrl("https://gw.test/charge")
+                .fakeApprovals(fakeApprovals)
+                .stripeApiKey("sk_test")
+                .paypalApiKey("pp_test")
+                .build());
     }
 
     @Test

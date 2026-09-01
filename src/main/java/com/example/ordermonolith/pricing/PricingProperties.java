@@ -1,5 +1,6 @@
 package com.example.ordermonolith.pricing;
 
+import lombok.Builder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.util.Map;
  * @param coupons               coupon code &rarr; fraction of subtotal discounted
  *                              (e.g. {@code SAVE5 -> 0.05}); unknown codes are ignored
  */
+@Builder
 @ConfigurationProperties(prefix = "pricing")
 public record PricingProperties(
         BigDecimal taxRate,

@@ -6,6 +6,7 @@ import com.example.ordermonolith.service.OrderService;
 import com.example.ordermonolith.web.dto.CheckoutRequest;
 import com.example.ordermonolith.web.dto.CheckoutResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,13 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor
 class OrderController {
 
     private final OrderService orderService;
-
-    OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
 
     @PostMapping("/checkout")
     @ResponseStatus(HttpStatus.CREATED)
@@ -38,13 +36,17 @@ class OrderController {
 
     private static CheckoutCommand toCommand(CheckoutRequest request) {
         var items = request.items().stream()
-                .map(item -> new CheckoutCommand.Item(item.productId(), item.quantity()))
+                .map(item -> CheckoutCommand.Item.builder()
+                        .productId(item.productId())
+                        .quantity(item.quantity())
+                        .build())
                 .toList();
-        return new CheckoutCommand(
-                request.customerEmail(),
-                items,
-                request.paymentMethod(),
-                request.coupon(),
-                request.cardNumber());
+        return CheckoutCommand.builder()
+                .customerEmail(request.customerEmail())
+                .items(items)
+                .paymentMethod(request.paymentMethod())
+                .coupon(request.coupon())
+                .cardNumber(request.cardNumber())
+                .build();
     }
 }

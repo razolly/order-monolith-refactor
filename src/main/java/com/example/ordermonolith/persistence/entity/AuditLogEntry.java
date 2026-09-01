@@ -6,15 +6,24 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 /**
  * Row of {@code audit_log}. Written in the same transaction as the order so the
  * trail can never disagree with what was actually committed.
+ *
+ * <p>Created with {@code AuditLogEntry.builder().message(...).build()};
+ * {@code createdAt} is stamped at build time.
  */
 @Entity
 @Table(name = "audit_log")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class AuditLogEntry {
 
     @Id
@@ -27,28 +36,9 @@ public class AuditLogEntry {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    protected AuditLogEntry() {
-        // required by JPA
-    }
-
-    private AuditLogEntry(String message, Instant createdAt) {
+    @Builder
+    private AuditLogEntry(String message) {
         this.message = message;
-        this.createdAt = createdAt;
-    }
-
-    public static AuditLogEntry now(String message) {
-        return new AuditLogEntry(message, Instant.now());
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
+        this.createdAt = Instant.now();
     }
 }
