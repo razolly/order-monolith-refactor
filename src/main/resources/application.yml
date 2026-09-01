@@ -17,6 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+    defer-datasource-initialization: false
     open-in-view: false
     properties:
       hibernate:
@@ -30,7 +31,23 @@ spring:
 server:
   port: 8080
 
+# Pricing rules - previously magic numbers inline in the controller.
+pricing:
+  tax-rate: 0.08
+  free-shipping-threshold: 100.00
+  standard-shipping-fee: 9.99
+  coupons:
+    SAVE5: 0.05
+
+# Payment integration config. Secrets come from the environment, not this file.
+payment:
+  base-url: https://api.paymentservice.com/v1/charge
+  # true for local/dev: skip the (non-existent) gateway and return a synthetic
+  # reference. Set false where a real outage must surface as HTTP 502.
+  fake-approvals: true
+  stripe-api-key: ${STRIPE_API_KEY:}
+  paypal-api-key: ${PAYPAL_API_KEY:}
+
 logging:
   level:
     com.example.ordermonolith: DEBUG
-    org.springframework.jdbc.core: DEBUG
